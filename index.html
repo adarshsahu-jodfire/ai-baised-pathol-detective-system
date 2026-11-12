@@ -1,0 +1,298 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pathology Detective AI</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+font-family:Arial,sans-serif;
+background:#07111f;color:#eaf2ff;
+min-height:100vh;
+}
+header{
+padding:22px 6%;
+background:#0c1b2e;
+border-bottom:1px solid #203651;
+display:flex;justify-content:space-between;
+align-items:center;gap:15px;flex-wrap:wrap;
+}
+.logo{font-size:23px;font-weight:bold;color:#62d9ff}
+.logo span{color:white}
+.status{color:#9de8c5;font-size:13px}
+.container{max-width:1200px;margin:auto;padding:30px 18px}
+.hero{margin-bottom:25px}
+.hero h1{font-size:32px;margin-bottom:10px}
+.hero p{color:#9eb3ca;line-height:1.6}
+.layout{
+display:grid;grid-template-columns:1fr 1fr;
+gap:20px;
+}
+.panel{
+background:#102139;
+border:1px solid #263e5c;
+border-radius:17px;padding:23px;
+}
+.panel h2{font-size:19px;margin-bottom:18px}
+label{display:block;margin:16px 0 8px;color:#b8cbe0}
+select,input,button{
+width:100%;padding:13px;border-radius:9px;
+border:1px solid #34516f;background:#0a192b;
+color:white;font-size:15px;
+}
+input[type=file]{padding:12px}
+button{
+background:linear-gradient(100deg,#087dbb,#2667e8);
+border:none;font-weight:bold;cursor:pointer;
+margin-top:15px;
+}
+button:hover{opacity:.88}
+button:disabled{opacity:.5;cursor:not-allowed}
+.preview{
+margin-top:18px;min-height:190px;
+border:1px dashed #41617f;border-radius:12px;
+display:flex;align-items:center;justify-content:center;
+overflow:hidden;color:#91a7bd;text-align:center;
+}
+.preview img{max-width:100%;max-height:300px;object-fit:contain}
+.result{
+margin-top:18px;padding:18px;
+background:#0a192b;border-radius:12px;
+border:1px solid #294563;
+}
+.result h3{margin-bottom:12px;color:#64d9ff}
+.big{font-size:25px;font-weight:bold;margin:12px 0}
+.muted{color:#9eb3ca;font-size:13px;line-height:1.6}
+.bar{height:9px;background:#263b54;border-radius:20px;margin:8px 0 15px}
+.bar span{display:block;height:100%;background:#27c4e8;border-radius:20px}
+.history{margin-top:22px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:400px}
+th,td{text-align:left;padding:12px;border-bottom:1px solid #29415d}
+th{color:#66d9ff}
+.warning{
+margin-top:20px;padding:14px;border-radius:10px;
+background:#392d17;color:#ffe1a2;
+font-size:13px;line-height:1.6;
+}
+footer{text-align:center;padding:25px;color:#7990aa;font-size:13px}
+@media(max-width:750px){
+.layout{grid-template-columns:1fr}
+.hero h1{font-size:25px}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo">✚ Pathology <span>Detective AI</span></div>
+<div class="status">● Educational Demo</div>
+</header>
+
+<div class="container">
+
+<section class="hero">
+<h1>AI Pathology Analysis Dashboard</h1>
+<p>Upload a medical dataset image, select its dataset category and explore the educational demo dashboard.</p>
+</section>
+
+<div class="layout">
+
+<section class="panel">
+<h2>01 — Image Analysis</h2>
+
+<label>Select Dataset</label>
+<select id="dataset">
+<option value="BloodMNIST">BloodMNIST</option>
+<option value="PathMNIST">PathMNIST</option>
+<option value="DermaMNIST">DermaMNIST</option>
+</select>
+
+<label>Upload Image</label>
+<input type="file" id="imageInput" accept="image/*">
+
+<div class="preview" id="preview">
+Image preview will appear here
+</div>
+
+<button id="analyzeBtn" onclick="analyze()">Run Demo Analysis</button>
+
+<p class="muted" style="margin-top:12px">
+Demo mode: This page does not connect to your trained CNN model.
+</p>
+</section>
+
+<section class="panel">
+<h2>02 — Analysis Results</h2>
+<div id="results" class="result">
+<h3>Waiting for image</h3>
+<p class="muted">Upload an image to begin the educational demo.</p>
+</div>
+
+<button onclick="downloadReport()">Download Demo Report</button>
+</section>
+
+</div>
+
+<section class="panel history">
+<h2>03 — Analysis History</h2>
+<table>
+<thead>
+<tr><th>Image</th><th>Dataset</th><th>Result</th><th>Time</th></tr>
+</thead>
+<tbody id="historyBody">
+<tr><td colspan="4">No analysis yet</td></tr>
+</tbody>
+</table>
+<button onclick="clearHistory()">Clear History</button>
+</section>
+
+<div class="warning">
+<strong>Important Medical Disclaimer:</strong>
+This is a student educational demonstration only. It does not detect, diagnose, or rule out any disease. Demo results are illustrative and must not be used for medical decisions. Real analysis requires a properly validated model and qualified medical professionals.
+</div>
+
+</div>
+
+<footer>
+Pathology Detective AI | Student Machine Learning Project
+</footer>
+
+<script>
+let selectedImage = null;
+let currentReport = null;
+let historyItems = [];
+
+const imageInput = document.getElementById("imageInput");
+
+imageInput.addEventListener("change",function(e){
+const file=e.target.files[0];
+
+if(!file)return;
+
+if(!file.type.startsWith("image/")){
+alert("Please select an image file.");
+return;
+}
+
+selectedImage=file;
+
+const reader=new FileReader();
+
+reader.onload=function(event){
+document.getElementById("preview").innerHTML=
+'<img src="'+event.target.result+'" alt="Uploaded image">';
+};
+
+reader.readAsDataURL(file);
+});
+
+function analyze(){
+
+if(!selectedImage){
+alert("Please upload an image first.");
+return;
+}
+
+const dataset=document.getElementById("dataset").value;
+
+const labels={
+BloodMNIST:["Blood cell image uploaded","Educational image review"],
+PathMNIST:["Histopathology image uploaded","Educational image review"],
+DermaMNIST:["Skin image uploaded","Educational image review"]
+};
+
+const result=labels[dataset];
+
+const time=new Date().toLocaleString();
+
+document.getElementById("results").innerHTML=`
+<h3>Demo Analysis Complete</h3>
+<div class="big">${result[0]}</div>
+<p class="muted">Selected dataset: ${dataset}</p>
+<div class="warning">
+This is not an AI prediction. No disease classification or confidence score has been calculated.
+</div>
+<p class="muted" style="margin-top:12px">Analysis time: ${time}</p>
+`;
+
+currentReport={
+dataset:dataset,
+result:result[0],
+time:time,
+image:selectedImage.name
+};
+
+historyItems.unshift(currentReport);
+renderHistory();
+}
+
+function renderHistory(){
+
+const body=document.getElementById("historyBody");
+
+if(historyItems.length===0){
+body.innerHTML="<tr><td colspan='4'>No analysis yet</td></tr>";
+return;
+}
+
+body.innerHTML=historyItems.map(item=>`
+<tr>
+<td>${escapeHTML(item.image)}</td>
+<td>${escapeHTML(item.dataset)}</td>
+<td>${escapeHTML(item.result)}</td>
+<td>${escapeHTML(item.time)}</td>
+</tr>
+`).join("");
+}
+
+function escapeHTML(value){
+return String(value).replace(/[&<>"']/g,function(c){
+return {
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#39;"
+}[c];
+});
+}
+
+function clearHistory(){
+historyItems=[];
+renderHistory();
+}
+
+function downloadReport(){
+
+if(!currentReport){
+alert("Please upload an image and run the demo first.");
+return;
+}
+
+const content=
+"PATHOLOGY DETECTIVE AI - DEMO REPORT\n\n"+
+"Dataset: "+currentReport.dataset+"\n"+
+"Image: "+currentReport.image+"\n"+
+"Demo Result: "+currentReport.result+"\n"+
+"Time: "+currentReport.time+"\n\n"+
+"IMPORTANT: This is an educational demo, not a medical diagnosis.\n"+
+"No AI prediction or disease classification was performed.";
+
+const blob=new Blob([content],{type:"text/plain"});
+const url=URL.createObjectURL(blob);
+const a=document.createElement("a");
+
+a.href=url;
+a.download="Pathology_Demo_Report.txt";
+a.click();
+
+URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
